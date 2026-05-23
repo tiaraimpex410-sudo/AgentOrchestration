@@ -1,0 +1,12 @@
+# Git Secret Safeguards for Antigravity-native collaborative bounty hunter framework
+.env
+manifest.json
+uv.lock
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+scratch/
