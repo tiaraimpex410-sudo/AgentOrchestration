@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and runtime metadata
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.uv/
+
+# Environment files and credentials (CRITICAL SECURITY)
+.env
+.env.safe
+.env.local
+.env.development
+.env.production
+.env.*
+
+# Local scratch and debug logs
+*.log
+logs/
+debug/
+scratch/
+sandbox/
+manifest.json
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE files
+.vscode/
+.idea/

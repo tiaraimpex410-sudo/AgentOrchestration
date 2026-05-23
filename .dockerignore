@@ -1,0 +1,52 @@
+# ==============================================================================
+# Sovereign Docker Exclusions Policy — Security & Credentials Safeguards
+# ==============================================================================
+
+# Exclude sensitive environment configurations and secrets
+.env
+.env.safe
+.env.local
+.env.development
+.env.production
+.env.*
+
+# Exclude debug output and local execution logs
+*.log
+logs/
+debug/
+scratch/
+sandbox/
+
+# Exclude local dependency caches, packaging, and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.uv/
+.venv/
+venv/
+env/
+
+# Exclude version control metadata (prevents broad docker context leakage)
+.git/
+.github/
+.gitignore
+
+# Exclude local build and distribution artifacts
+build/
+dist/
+*.egg-info/
+
+# Exclude local IDE, workspace metadata, and swap files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
