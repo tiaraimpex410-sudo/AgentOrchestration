@@ -7,6 +7,19 @@ from datetime import datetime
 from typing import Dict, Optional
 
 
+import contextvars
+
+correlation_id_ctx = contextvars.ContextVar("correlation_id", default="")
+
+
+class CorrelationIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        cid = correlation_id_ctx.get()
+        if cid:
+            record.request_id = cid
+        return True
+
+
 class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         log_entry: Dict = {
@@ -24,6 +37,7 @@ class StructuredFormatter(logging.Formatter):
 
 def configure_logging(level: str = "INFO", json_output: bool = True) -> None:
     handler = logging.StreamHandler(sys.stdout)
+    handler.addFilter(CorrelationIdFilter())
     if json_output:
         handler.setFormatter(StructuredFormatter())
     else:

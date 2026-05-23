@@ -2,10 +2,12 @@
 
 import time
 import logging
+import uuid
 from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from src.common.logging import correlation_id_ctx
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,22 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         duration = time.time() - start
         logger.info(f"{request.method} {request.url.path} {response.status_code} {duration:.3f}s")
+        return response
+
+
+class CorrelationIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        correlation_id = request.headers.get("X-Correlation-ID") or request.headers.get("X-Request-ID")
+        if not correlation_id:
+            correlation_id = str(uuid.uuid4())
+            
+        token = correlation_id_ctx.set(correlation_id)
+        try:
+            response = await call_next(request)
+        finally:
+            correlation_id_ctx.reset(token)
+            
+        response.headers["X-Correlation-ID"] = correlation_id
         return response
 
 # 2019-03-01T18:35:19 update
