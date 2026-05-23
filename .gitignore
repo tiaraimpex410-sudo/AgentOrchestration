@@ -1,0 +1,9 @@
+# Sandbox Ignore List
+.env
+.env.safe
+manifest.json
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+uv.lock

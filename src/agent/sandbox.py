@@ -1,8 +1,12 @@
 """Agent Sandbox — Isolated execution environment for agents."""
 
 import os
+import re
 import tempfile
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 from typing import Dict, Optional
 from pathlib import Path
 
@@ -16,17 +20,35 @@ class ResourceLimits:
 
 class AgentSandbox:
     def __init__(self, base_path: Optional[str] = None):
-        self.base_path = Path(base_path or tempfile.mkdtemp(prefix="ao_sandbox_"))
+        self.base_path = Path(base_path or tempfile.mkdtemp(prefix="ao_sandbox_")).resolve()
         self._sandboxes: Dict[str, Path] = {}
 
+    def _sanitize_id(self, agent_id: str) -> str:
+        if not agent_id:
+            raise ValueError("agent_id cannot be empty")
+        if "/" in agent_id or "\\" in agent_id or ".." in agent_id:
+            raise ValueError(f"agent_id contains directory traversal sequences: {agent_id}")
+        # Restrict to alphanumeric, dashes, and underscores only
+        sanitized = re.sub(r"[^a-zA-Z0-9_-]", "", agent_id)
+        if not sanitized:
+            raise ValueError(f"agent_id contains invalid characters: {agent_id}")
+        return sanitized
+
     def create(self, agent_id: str, limits: Optional[ResourceLimits] = None) -> Path:
-        sandbox_path = self.base_path / agent_id
+        sanitized_id = self._sanitize_id(agent_id)
+        sandbox_path = (self.base_path / sanitized_id).resolve()
+        
+        # Enforce boundary checks strictly to prevent directory traversal escapes
+        if not str(sandbox_path).startswith(str(self.base_path)):
+            raise ValueError(f"Confinement violation: {agent_id} attempts to escape sandbox")
+            
         sandbox_path.mkdir(parents=True, exist_ok=True)
-        self._sandboxes[agent_id] = sandbox_path
+        self._sandboxes[sanitized_id] = sandbox_path
         return sandbox_path
 
     def destroy(self, agent_id: str) -> bool:
-        sandbox = self._sandboxes.pop(agent_id, None)
+        sanitized_id = self._sanitize_id(agent_id)
+        sandbox = self._sandboxes.pop(sanitized_id, None)
         if sandbox and sandbox.exists():
             import shutil
             shutil.rmtree(sandbox, ignore_errors=True)
@@ -34,9 +56,13 @@ class AgentSandbox:
         return False
 
     def get_path(self, agent_id: str) -> Optional[Path]:
-        return self._sandboxes.get(agent_id)
+        sanitized_id = self._sanitize_id(agent_id)
+        return self._sandboxes.get(sanitized_id)
 
     def apply_limits(self, agent_id: str, limits: ResourceLimits) -> None:
+        sanitized_id = self._sanitize_id(agent_id)
+        if resource is None:
+            return
         try:
             resource.setrlimit(resource.RLIMIT_CPU, (limits.cpu_time, limits.cpu_time))
             mem_bytes = limits.memory_mb * 1024 * 1024
