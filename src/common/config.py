@@ -21,7 +21,39 @@ class Config:
         for key, value in os.environ.items():
             if key.startswith(prefix):
                 config_key = key[len(prefix):].lower().replace("_", ".")
-                self._set_nested(config_key, value)
+                existing = self.get(config_key)
+                coerced_value = value
+                
+                if existing is not None:
+                    if isinstance(existing, bool):
+                        if value.lower() in ("true", "1", "yes", "on"):
+                            coerced_value = True
+                        elif value.lower() in ("false", "0", "no", "off"):
+                            coerced_value = False
+                    elif isinstance(existing, int):
+                        try:
+                            coerced_value = int(value)
+                        except ValueError:
+                            pass
+                    elif isinstance(existing, float):
+                        try:
+                            coerced_value = float(value)
+                        except ValueError:
+                            pass
+                else:
+                    # Dynamic coercion for brand new configs
+                    if value.lower() in ("true", "false", "yes", "no", "on", "off"):
+                        coerced_value = value.lower() in ("true", "yes", "on")
+                    else:
+                        try:
+                            if "." in value:
+                                coerced_value = float(value)
+                            else:
+                                coerced_value = int(value)
+                        except ValueError:
+                            pass
+                            
+                self._set_nested(config_key, coerced_value)
 
     def _set_nested(self, key: str, value: Any) -> None:
         parts = key.split(".")

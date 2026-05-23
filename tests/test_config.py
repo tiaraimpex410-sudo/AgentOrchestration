@@ -32,6 +32,45 @@ class TestConfig:
         assert data["key1"] == "value1"
         assert data["key2"] == "value2"
 
+    def test_env_overrides_numeric_coercion(self, monkeypatch, tmp_path):
+        config_file = tmp_path / "config.json"
+        config_file.write_text('{"app": {"port": 8080, "timeout": 30.5, "debug": false, "name": "foo"}}')
+        
+        monkeypatch.setenv("AO_APP_PORT", "9090")
+        monkeypatch.setenv("AO_APP_TIMEOUT", "45.2")
+        monkeypatch.setenv("AO_APP_DEBUG", "true")
+        monkeypatch.setenv("AO_APP_NAME", "bar")
+        monkeypatch.setenv("AO_NEW_INT", "100")
+        monkeypatch.setenv("AO_NEW_FLOAT", "99.9")
+        monkeypatch.setenv("AO_NEW_BOOL", "false")
+        monkeypatch.setenv("AO_NEW_STR", "hello")
+        
+        config = Config(str(config_file))
+        
+        assert config.get("app.port") == 9090
+        assert isinstance(config.get("app.port"), int)
+        
+        assert config.get("app.timeout") == 45.2
+        assert isinstance(config.get("app.timeout"), float)
+        
+        assert config.get("app.debug") is True
+        assert isinstance(config.get("app.debug"), bool)
+        
+        assert config.get("app.name") == "bar"
+        assert isinstance(config.get("app.name"), str)
+        
+        assert config.get("new.int") == 100
+        assert isinstance(config.get("new.int"), int)
+        
+        assert config.get("new.float") == 99.9
+        assert isinstance(config.get("new.float"), float)
+        
+        assert config.get("new.bool") is False
+        assert isinstance(config.get("new.bool"), bool)
+        
+        assert config.get("new.str") == "hello"
+        assert isinstance(config.get("new.str"), str)
+
 # 2019-02-01T18:58:35 update
 
 # 2019-07-31T13:45:15 update
